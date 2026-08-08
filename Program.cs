@@ -38,20 +38,10 @@ while (true)
             if (line.StartsWith("$beep"))
             {
                 string[] beepSplits = line.Split(",");
-                bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-                if (isWindows)
-                {
-                    //Console.Beep(int.Parse(beepSplits[1]), int.Parse(beepSplits[2]));
-                    Thread playThread = new Thread(() => PlayToneNAudio(double.Parse(beepSplits[1]), int.Parse(beepSplits[2])));
-                    playThread.IsBackground = true;
-                    playThread.Start();
-                }
-                else
-                {
-                    Thread playThread = new Thread(() => PlayToneNAudio(double.Parse(beepSplits[1]), int.Parse(beepSplits[2])));
-                    playThread.IsBackground = true;
-                    playThread.Start();
-                }
+                // NAudio is already cross-platform
+                Thread playThread = new Thread(() => PlayToneNAudio(double.Parse(beepSplits[1]), int.Parse(beepSplits[2])));
+                playThread.IsBackground = true;
+                playThread.Start();
             }
 
             Console.WriteLine(line);
