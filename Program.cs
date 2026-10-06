@@ -10,6 +10,28 @@ TcpListener listener = new TcpListener(addr, port);
 listener.Start();
 Console.Title = "Project CloBeats Debug Console";
 Console.WriteLine("Listening on port " + port + "...");
+Console.WriteLine("Type 'clear' to clear the console.");
+
+_ = Task.Run(() =>
+{
+    while (true)
+    {
+        string? command = Console.ReadLine();
+
+        if (command == null)
+            return;
+
+        if (command.Equals("clear", StringComparison.OrdinalIgnoreCase) ||
+            command.Equals("cls", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.Clear();
+        }
+        else
+        {
+            Console.WriteLine("Unknown command. Available command: clear");
+        }
+    }
+});
 
 while (true)
 {
@@ -39,7 +61,7 @@ while (true)
             {
                 string[] beepSplits = line.Split(",");
                 // NAudio is already cross-platform
-                Thread playThread = new Thread(() => PlayToneNAudio(double.Parse(beepSplits[1]), int.Parse(beepSplits[2])));
+                Thread playThread = new Thread(() => PlayToneNAudio(double.Parse(beepSplits[1]), int.Parse(beepSplits[2]), double.Parse(beepSplits[3]), beepSplits[4]));
                 playThread.IsBackground = true;
                 playThread.Start();
             }
@@ -62,24 +84,29 @@ while (true)
 
     // Loop continues and waits for another connection.
 }
-static void PlayToneNAudio(double frequency, int durationMs)
+static void PlayToneNAudio(double frequency, int durationMs, double volume, string waveType = "sine")
 {
+    NAudio.Wave.SampleProviders.SignalGeneratorType signalGeneratorType = waveType switch
+    {
+        "sine" => NAudio.Wave.SampleProviders.SignalGeneratorType.Sin,
+        "square" => NAudio.Wave.SampleProviders.SignalGeneratorType.Square,
+        "triangle" => NAudio.Wave.SampleProviders.SignalGeneratorType.Triangle,
+        "sawtooth" => NAudio.Wave.SampleProviders.SignalGeneratorType.SawTooth,
+        "noise" => NAudio.Wave.SampleProviders.SignalGeneratorType.White,
+        _ => NAudio.Wave.SampleProviders.SignalGeneratorType.Sin
+    };
     var signalGen = new NAudio.Wave.SampleProviders.SignalGenerator()
     {
-        Gain = 0.2,
+        Gain = volume,
         Frequency = frequency,
-        Type = NAudio.Wave.SampleProviders.SignalGeneratorType.Sin
+        Type = signalGeneratorType
     };
-
     var sampleProvider = signalGen.Take(TimeSpan.FromMilliseconds(durationMs));
-
     // Convert ISampleProvider to IWaveProvider for DirectSoundOut
     var waveProvider = sampleProvider.ToWaveProvider();
-
     var output = new NAudio.Wave.DirectSoundOut();
     output.Init(waveProvider);
     output.Play();
-
     // Wait for duration
     Thread.Sleep(durationMs);
 }
